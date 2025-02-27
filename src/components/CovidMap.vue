@@ -90,21 +90,16 @@ export default {
                 deaths: parseInt(countryData.TotalDeaths) || 0,
                 recovered: parseInt(countryData.TotalRecovered) || 0
               }
-
               this.tooltipStyle = {
-                left: `${event.pageX + 10}px`,
-                top: `${event.pageY + 10}px`
+                left: `${event.x}px`,
+                top: `${event.y}px`
               }
-
-              d3.select(event.currentTarget)
-                  .attr("stroke-width", 2)
-                  .attr("stroke", "#333")
             }
           })
           .on("mousemove", (event) => {
             this.tooltipStyle = {
-              left: `${event.pageX + 10}px`,
-              top: `${event.pageY + 10}px`
+              left: `${event.offsetX}px`,
+              top: `${event.offsetY}px`
             }
           })
           .on("mouseout", (event) => {
@@ -184,7 +179,7 @@ export default {
 }
 
 .tooltip {
-  position: fixed;
+  position: absolute;
   background: rgba(255, 255, 255, 0.95);
   padding: 10px 15px;
   border-radius: 4px;
