@@ -9,9 +9,20 @@ def clean_data(input_file, output_file=None):
         df = pd.read_csv(input_file)
         colonnes_initiales = len(df.columns)
 
-        colonnes_a_supprimer = [col for col in df.columns if 'smoothed' in col.lower()]
-        df = df.drop(columns=colonnes_a_supprimer)
+        # Supprimer les colonnes contenant 'smoothed'
+        colonnes_a_supprimer_smoothed = [col for col in df.columns if 'smoothed' in col.lower()]
+        df = df.drop(columns=colonnes_a_supprimer_smoothed)
 
+        # Supprimer les colonnes qui contiennent moins de 75% de données
+        seuil_donnees = 0.75
+        pourcentage_valeurs_non_nulles = df.count() / len(df)
+        colonnes_a_supprimer_nulles = pourcentage_valeurs_non_nulles[pourcentage_valeurs_non_nulles < seuil_donnees].index.tolist()
+        df = df.drop(columns=colonnes_a_supprimer_nulles)
+
+        # Nombre total de colonnes supprimées
+        total_colonnes_supprimees = len(colonnes_a_supprimer_smoothed) + len(colonnes_a_supprimer_nulles)
+
+        # Supprimer les lignes sans continent, location ou date
         lignes_initiales = len(df)
         df = df.dropna(subset=['continent', 'location', 'date'])
         lignes_supprimees = lignes_initiales - len(df)
@@ -22,8 +33,11 @@ def clean_data(input_file, output_file=None):
 
         df.to_csv(output_file, index=False)
 
-        print(f"Nettoyage terminé. {len(colonnes_a_supprimer)} colonnes supprimées.")
-        print(f"Lignes sans continent ou location supprimées: {lignes_supprimees}")
+        print(f"Nettoyage terminé.")
+        print(f"Colonnes 'smoothed' supprimées: {len(colonnes_a_supprimer_smoothed)}")
+        print(f"Colonnes avec moins de 75% de données supprimées: {len(colonnes_a_supprimer_nulles)}")
+        print(f"Total colonnes supprimées: {total_colonnes_supprimees}")
+        print(f"Lignes sans continent, location ou date supprimées: {lignes_supprimees}")
         print(f"Colonnes initiales: {colonnes_initiales}")
         print(f"Colonnes restantes: {len(df.columns)}")
         print(f"Lignes initiales: {lignes_initiales}")
