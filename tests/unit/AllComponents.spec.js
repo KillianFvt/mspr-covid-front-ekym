@@ -1,9 +1,20 @@
+import { describe, it, expect, vi } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
 import HelloWorld from '@/components/HelloWorld.vue'
-import BarChart from '@/components/BarChart.vue'
-import DeathChart from '@/components/DeathChart.vue'
-import PopChart from '@/components/PopChart.vue'
+import ActiveCasesChart from '@/components/ActiveCasesChart.vue'
+import ContinentChart from '@/components/ContinentChart.vue'
+import CountryPieChart from '@/components/CountryPieChart.vue'
+import CountryDeathChart from '@/components/CountryDeathChart.vue'
 import CovidMap from '@/components/CovidMap.vue'
+
+// Mock Chart.js pour éviter les erreurs de canvas dans jsdom
+vi.mock('chart.js/auto', () => ({
+  __esModule: true,
+  default: vi.fn().mockImplementation(() => ({
+    destroy: vi.fn(),
+    update: vi.fn()
+  }))
+}))
 
 describe('HelloWorld.vue', () => {
   it('affiche le message passé en prop', () => {
@@ -14,63 +25,74 @@ describe('HelloWorld.vue', () => {
   })
 })
 
-describe('BarChart.vue', () => {
-  it('affiche un svg avec le bon nombre de parts', () => {
+describe('ActiveCasesChart.vue', () => {
+  it('affiche un canvas', () => {
     const data = [
-      { country_region: "France", total_cases: 10 },
-      { country_region: "USA", total_cases: 20 },
-      { country_region: "Spain", total_cases: 30 }
+      { country_region: "France", active_case: 100, population: 1000 },
+      { country_region: "USA", active_case: 200, population: 2000 }
     ]
-    const wrapper = shallowMount(BarChart, {
-      props: { data }
+    const wrapper = shallowMount(ActiveCasesChart, {
+      props: { data, limit: 2, displayMode: 'bar' }
     })
-    // Vérifie qu'il y a autant de <path> que de données (parts du camembert)
-    expect(wrapper.findAll('path').length).toBe(data.length)
+    expect(wrapper.find('canvas').exists()).toBe(true)
   })
 })
 
-describe('DeathChart.vue', () => {
-  it('affiche un svg', () => {
+describe('ContinentChart.vue', () => {
+  it('affiche un canvas', () => {
     const data = [
-      { country_region: "France", total_death: 10 },
-      { country_region: "USA", total_death: 20 }
+      { name: "Europe", total_cases: 1000 },
+      { name: "Asia", total_cases: 2000 }
     ]
-    const wrapper = shallowMount(DeathChart, {
-      props: { data }
+    const wrapper = shallowMount(ContinentChart, {
+      props: { data, metricKey: 'total_cases' }
     })
-    expect(wrapper.find('svg').exists()).toBe(true)
+    expect(wrapper.find('canvas').exists()).toBe(true)
   })
 })
 
-describe('PopChart.vue', () => {
-  it('affiche un svg', () => {
+describe('CountryPieChart.vue', () => {
+  it('affiche un canvas', () => {
     const data = [
-      { population: 100, total_cases: 10 },
-      { population: 200, total_cases: 20 }
+      { country_region: "France", total_cases: 1000 },
+      { country_region: "USA", total_cases: 2000 }
     ]
-    const wrapper = shallowMount(PopChart, {
+    const wrapper = shallowMount(CountryPieChart, {
       props: { data }
     })
-    expect(wrapper.find('svg').exists()).toBe(true)
+    expect(wrapper.find('canvas').exists()).toBe(true)
   })
 })
 
-global.fetch = jest.fn(() =>
+describe('CountryDeathChart.vue', () => {
+  it('affiche un canvas', () => {
+    const data = [
+      { country_region: "France", total_deaths: 100 },
+      { country_region: "USA", total_deaths: 200 }
+    ]
+    const wrapper = shallowMount(CountryDeathChart, {
+      props: { data }
+    })
+    expect(wrapper.find('canvas').exists()).toBe(true)
+  })
+})
+
+// Mock fetch pour CovidMap
+global.fetch = vi.fn(() =>
   Promise.resolve({
     text: () => Promise.resolve('Country/Region,Continent,TotalCases,TotalDeaths\nFrance,Europe,1000,10'),
     json: () => Promise.resolve({ features: [] })
   })
 );
+
 describe('CovidMap.vue', () => {
-  it('affiche la légende si continentData est défini', async () => {
-    const wrapper = shallowMount(CovidMap)
-    // Simule la présence de continentData
-    await wrapper.setData({
-      continentData: {
-        Europe: { cases: 1000, deaths: 10 },
-        Asia: { cases: 2000, deaths: 20 }
-      }
+  it('se monte sans erreur', () => {
+    const data = [
+      { country_region: "France", continent: "Europe", total_cases: 1000, total_deaths: 10, population: 1000000 }
+    ]
+    const wrapper = shallowMount(CovidMap, {
+      props: { data, view: 'country' }
     })
-    expect(wrapper.find('.legend').exists()).toBe(true)
+    expect(wrapper.find('#covid-map').exists()).toBe(true)
   })
 })
